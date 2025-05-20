@@ -10,7 +10,6 @@ import lombok.Setter;
 import com.example.movieapp.model.MovieDetails;
 import com.example.movieapp.model.MovieList;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 import com.example.movieapp.service.RetrieveMovieDetailsService;
 
 
@@ -53,42 +52,43 @@ public class RetrieveMovieDetailsBean implements Serializable {
     private String outputText = "";
 
 
+    private void loadRandomMovie() throws IOException, InterruptedException {
+        // Choose a random day (between 1 and 10)
+        int randomDay = new Random().nextInt(10) + 1;
+
+        movielist = retrieveMovieDetailsService.getDataSetForCurrentDay(randomDay);
+        movie_datalist = movielist.results;
+
+        Random rand = new Random();
+        int select_movie = rand.nextInt(movie_datalist.length);
+        movie_synopsis = movie_datalist[select_movie].overview;
+        correct_movie_title = movie_datalist[select_movie].title;
+        //System.out.println(correct_movie_title);
+
+        movie_titles.clear();
+        for (int i = 2; i <= 10; i++) {
+            movielist = retrieveMovieDetailsService.getDataSetForCurrentDay(i);
+            movie_datalist = movielist.results;
+
+            for (MovieDetails m : movie_datalist) {
+                movie_titles.add(m.getTitle());
+            }
+        }
+
+    }
+
     /**
      * Metoda aceasta se ocupa initializarea formei
      */
     @PostConstruct
     public void init() {
-        //log.info("init method called");
         try {
-            movie_synopsis="poveste";
-            movielist = retrieveMovieDetailsService.getDataSetForCurrentDay(1);
-            movie_datalist = movielist.results;
-            Random rand = new Random();
-            int select_movie = rand.nextInt(movie_datalist.length);
-            movie_synopsis = movie_datalist[select_movie].overview;
-            correct_movie_title = movie_datalist[select_movie].title;
-            movie_titles.clear();
-            System.out.println(correct_movie_title);
-
-
-            for (int i = 2; i <= 10; i++) {
-                int size = movie_datalist.length;
-                for (int j = 0; j < size; j++) {
-                    movie_titles.add(movie_datalist[j].getTitle());
-
-                }
-                movielist = retrieveMovieDetailsService.getDataSetForCurrentDay(i);
-                movie_datalist = movielist.results;
-            }
-
-
-        } catch (IOException  | InterruptedException e) {
+            loadRandomMovie();
+        } catch (IOException | InterruptedException e) {
             throw new RuntimeException(e);
         }
-
-
-
     }
+
 
 
     public String getCorrectMovieTitle() {
@@ -106,6 +106,12 @@ public class RetrieveMovieDetailsBean implements Serializable {
     public void processSelection() {
         if (Objects.equals(selectedItem, getCorrectMovieTitle())) {
             outputText = "Good job, you guessed right!!";
+            try {
+                loadRandomMovie();
+                selectedItem = "";
+            } catch (IOException | InterruptedException e) {
+                outputText = "Something went wrong while loading the next movie.";
+            }
         } else outputText = "Hmm, maybe try again...";
     }
 }
